@@ -17,7 +17,6 @@ using Microsoft.Exchange.WebServices.Data;
 using NLog;
 
 namespace Pop2Owa
-
 {
 	/// <summary>
 	/// Description of EWSWrapper.
@@ -37,231 +36,265 @@ namespace Pop2Owa
 		private static string EndMail = Environment.NewLine+'.'+Environment.NewLine;
 		private static string ReplacedEndMail = Environment.NewLine+".."+Environment.NewLine;
 		internal Hashtable emails = new Hashtable();
-		internal struct message{
+		internal struct message
+        {
 			public string Id;
 			public string Uid;
 			public long Size;
-			public message(string MessageId, string MessageUid, long MessageSize){
+			public message(string MessageId, string MessageUid, long MessageSize)
+            {
 				Id=MessageId;
 				Uid=MessageUid;
 				Size=MessageSize;
-			}
-				
+			}				
 		}
 		private string[] messages;
 
 		public EWSWrapper(ExchangeSettings ServerSettings)
 		{
 			EWSSettings= ServerSettings;
-			if (String.IsNullOrEmpty(EWSSettings.Server)){
+			if (String.IsNullOrEmpty(EWSSettings.Server)==true)
+            {
 				throw new System.ArgumentException("Server cannot be null", "EWSSettings.Server");
 			}
 		}
-		public int SyncData(ref string syncState){
-		
-		int intReturn;
-		const int pageSize = 512;
-		try
-	      {
-	    	logger.Debug("Attemp to conect to {0}", EWSSettings.Server );
+        public int SyncData(ref string syncState)
+        {
+            int intReturn;
+            const int pageSize = 512;
+            try
+            {
+                logger.Debug("Attemp to conect to {0}", EWSSettings.Server);
 
-			service =Connection();
+                service = Connection();
 
-			PropertySet myPropertySet = new PropertySet(BasePropertySet.IdOnly);
-			myPropertySet.Add(ItemSchema.Size);
+                PropertySet myPropertySet = new PropertySet(BasePropertySet.IdOnly);
+                myPropertySet.Add(ItemSchema.Size);
 
-			FolderId myFolderId= new FolderId(WellKnownFolderName.Inbox);
+                FolderId myFolderId = new FolderId(WellKnownFolderName.Inbox);
 
-            ChangeCollection<ItemChange> changeCollection;
-			lngSize =0;
+                ChangeCollection<ItemChange> changeCollection;
+                lngSize = 0;
 
-			logger.Debug("Start findResults");
-			do
-			{
-		    	logger.Trace("looping");
-				changeCollection = service.SyncFolderItems(myFolderId,
-                                                               myPropertySet, null, pageSize,
-                                                            SyncFolderItemsScope.NormalItems, syncState);
-				foreach (var change in changeCollection) {
-					//Item newitem = Item.Bind(service, item.Id.ToString(), new PropertySet(BasePropertySet.IdOnly, new List<PropertyDefinitionBase>() { EmailMessageSchema.MimeContent }));
-					if (change.ChangeType == ChangeType.Create&& ! POP3Listener.UidlCacheItems.ContainsKey(change.ItemId.ToString())){
-						POP3Listener.UidlCacheItems.Add(change.Item.Id.ToString(), new message(change.Item.Id.ToString(), CalculateMD5Hash(change.Item.Id.ToString()) , change.Item.Size));
-					}else if (change.ChangeType == ChangeType.Delete && POP3Listener.UidlCacheItems.ContainsKey(change.ItemId.ToString())){
-						POP3Listener.UidlCacheItems.Remove(change.ItemId.ToString());
-					}
-				}
-				//view.Offset += 50;
-				syncState = changeCollection.SyncState;
-			} while (changeCollection.MoreChangesAvailable);
-			intReturn=0;
-		    logger.Debug("End findResults");
-			Array.Resize(ref messages, POP3Listener.UidlCacheItems.Count);
-			intCount =0;
-			foreach( DictionaryEntry ItemEntry in POP3Listener.UidlCacheItems)
-	        {
-				messages[intCount] = ItemEntry.Key.ToString();
-	            intCount++;
-	            lngSize+= ((message) ItemEntry.Value).Size;
-	        }
-			
-	    }catch (ServiceRequestException e){
-	    	intReturn=1;
-	    	if (e.InnerException is WebException){
-	    		WebException webexception = (WebException) e.InnerException;
-	    		if (webexception.Response!=null ) {
-	    			intReturn=(int) ((HttpWebResponse) webexception.Response).StatusCode;
-		    		if (intReturn.Equals(HttpStatusCode.ProxyAuthenticationRequired)  && ! AppSettings.AuthRequired){
-		    			logger.Warn("Proxy Authetication Required");
-			    		AppSettings.AuthRequired = true; 
-		    			intReturn=SyncData(ref syncState);
-		    		} else if (intReturn.Equals(HttpStatusCode.Unauthorized)) {
-		    			logger.Warn("Unauthorized, check your password");
-		    		} else {
-			    		logger.FatalException("Error conecting to the server", webexception);
-		    		}
-	    		}else{
-	    			switch (webexception.Status){
-    				case WebExceptionStatus.ConnectFailure:
-		    			logger.Fatal("Error conecting to the server, check your internet connection");
-		    			break;
-		    		default:
-		    			logger.FatalException("Error connecting to the server", webexception);
-		    			break;
-	    			}
-	    		} 		
-	    	} else {
-	    		logger.ErrorException("Error conecting to the server", e);
-	    	}
-	    }
-		return intReturn;
-		}
+                logger.Debug("Start findResults");
+                do
+                {
+                    logger.Trace("looping");
+                    changeCollection = service.SyncFolderItems(myFolderId,
+                                                                   myPropertySet, null, pageSize,
+                                                                SyncFolderItemsScope.NormalItems, syncState);
+                    foreach (var change in changeCollection)
+                    {
+                        //Item newitem = Item.Bind(service, item.Id.ToString(), new PropertySet(BasePropertySet.IdOnly, new List<PropertyDefinitionBase>() { EmailMessageSchema.MimeContent }));
+                        if (change.ChangeType == ChangeType.Create && !POP3Listener.UidlCacheItems.ContainsKey(change.ItemId.ToString()))
+                        {
+                            POP3Listener.UidlCacheItems.Add(change.Item.Id.ToString(), new message(change.Item.Id.ToString(), CalculateMD5Hash(change.Item.Id.ToString()), change.Item.Size));
+                        }
+                        else if (change.ChangeType == ChangeType.Delete && POP3Listener.UidlCacheItems.ContainsKey(change.ItemId.ToString()))
+                        {
+                            POP3Listener.UidlCacheItems.Remove(change.ItemId.ToString());
+                        }
+                    }
+                    //view.Offset += 50;
+                    syncState = changeCollection.SyncState;
+                } while (changeCollection.MoreChangesAvailable);
+                intReturn = 0;
+                logger.Debug("End findResults");
+                Array.Resize(ref messages, POP3Listener.UidlCacheItems.Count);
+                intCount = 0;
+                foreach (DictionaryEntry ItemEntry in POP3Listener.UidlCacheItems)
+                {
+                    messages[intCount] = ItemEntry.Key.ToString();
+                    intCount++;
+                    lngSize += ((message)ItemEntry.Value).Size;
+                }
 
-		public byte[] GetMsg(long lngMessage){
-			string strMsg;
-			byte[] MimeString= Item.Bind(service, GetMsgData(lngMessage).Id, new PropertySet(BasePropertySet.IdOnly, new List<PropertyDefinitionBase>() { EmailMessageSchema.MimeContent })).MimeContent.Content;  
+            }
+            catch (ServiceRequestException e)
+            {
+                intReturn = 1;
+                if (e.InnerException is WebException)
+                {
+                    WebException webexception = (WebException)e.InnerException;
+                    if (webexception.Response != null)
+                    {
+                        intReturn = (int)((HttpWebResponse)webexception.Response).StatusCode;
+                        if (intReturn.Equals(HttpStatusCode.ProxyAuthenticationRequired) && !AppSettings.AuthRequired)
+                        {
+                            logger.Warn("Proxy Authetication Required");
+                            AppSettings.AuthRequired = true;
+                            intReturn = SyncData(ref syncState);
+                        }
+                        else if (intReturn.Equals(HttpStatusCode.Unauthorized))
+                        {
+                            logger.Warn("Unauthorized, check your password");
+                        }
+                        else
+                        {
+                            logger.FatalException("Error conecting to the server", webexception);
+                        }
+                    }
+                    else
+                    {
+                        switch (webexception.Status)
+                        {
+                            case WebExceptionStatus.ConnectFailure:
+                                logger.Fatal("Error conecting to the server, check your internet connection");
+                                break;
+                            default:
+                                logger.FatalException("Error connecting to the server", webexception);
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    logger.ErrorException("Error conecting to the server", e);
+                }
+            }
+            return intReturn;
+        }
 
-			strMsg = System.Text.ASCIIEncoding.ASCII.GetString(MimeString);
-			if (strMsg.IndexOf(EndMail)>1){
-				return System.Text.Encoding.ASCII.GetBytes(strMsg.Replace(EndMail, ReplacedEndMail));
-			} else {
-				return MimeString;
-			}
-		}
-		public bool SendMsg(string msg){
-			try {
-				ExchangeService service = Connection();
-				service.Timeout= 300000; //5 minutes
-				EmailMessage message = new EmailMessage(service);
-				message.MimeContent = new MimeContent();
-				message.ItemClass= "IPM.Note";
+        public byte[] GetMsg(long lngMessage)
+        {
+            string strMsg;
+            byte[] MimeString = Item.Bind(service, GetMsgData(lngMessage).Id, new PropertySet(BasePropertySet.IdOnly, new List<PropertyDefinitionBase>() { EmailMessageSchema.MimeContent })).MimeContent.Content;
 
-				//TODO: Check conversion between stringbuilder & byte[].
-				message.MimeContent.Content=System.Text.Encoding.ASCII.GetBytes(msg);
+            strMsg = System.Text.ASCIIEncoding.ASCII.GetString(MimeString);
+            if (strMsg.IndexOf(EndMail) > 1)
+            {
+                return System.Text.Encoding.ASCII.GetBytes(strMsg.Replace(EndMail, ReplacedEndMail));
+            }
+            else
+            {
+                return MimeString;
+            }
+        }
+        public bool SendMsg(string msg)
+        {
+            try
+            {
+                ExchangeService service = Connection();
+                service.Timeout = 300000; //5 minutes
+                EmailMessage message = new EmailMessage(service);
+                message.MimeContent = new MimeContent();
+                message.ItemClass = "IPM.Note";
 
-				foreach( DictionaryEntry ItemEntry in emails)
-		        {
-					message.BccRecipients.Add(ItemEntry.Key.ToString());
-				}
+                //TODO: Check conversion between stringbuilder & byte[].
+                message.MimeContent.Content = System.Text.Encoding.ASCII.GetBytes(msg);
 
-				logger.Trace("Start send");
-				if (EWSSettings.SaveOnSend){
-					message.SendAndSaveCopy();
-				} else {
-					message.Send();			
-				}
-				logger.Trace("End send");
-				return true;
-			} catch (Exception e) {
-				logger.WarnException("Exception sending mail", e);
-				return false;
-			}
-		}
-		
-		public bool DeleteMsg(long lngMessage){
-			service.DeleteItems(new[] {new ItemId(GetMsgData(lngMessage).Id)}, DeleteMode.HardDelete, null, null);
-			return true;
-		}
-		/// <summary>
-		/// Calculate MD5 Hash used as POP3 UID string
-		/// </summary>
-		/// <param name="input">EWS message id</param>
-		/// <returns></returns>
-		private static string CalculateMD5Hash(string input)
-		{
-		    // step 1, calculate MD5 hash from input
-		    MD5 md5 = System.Security.Cryptography.MD5.Create();
-		    byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-		    byte[] hash = md5.ComputeHash(inputBytes);
-		 
-		    // step 2, convert byte array to hex string
-		    StringBuilder sb = new StringBuilder();
-		    for (int i = 0; i < hash.Length; i++)
-		    {
-		        sb.Append(hash[i].ToString("X2"));
-		    }
-		    return sb.ToString();
-		}
-		
-		
-		internal  message GetMsgData(long lngMessage){
-			return (message) POP3Listener.UidlCacheItems[messages[lngMessage-1]];
-		}
-		
-		public long TotalSize(){
-			return lngSize;
-			
-		}
-		public int TotalCount(){
-			return intCount;
-		}
-		
-		private ExchangeService Connection()
-		{
-			ExchangeService service = new ExchangeService(EWSSettings.ServerVersion);
-			service.Credentials = new NetworkCredential(User, Password, EWSSettings.Domain);
-			service.Url = new Uri(EWSSettings.Server);
+                foreach (DictionaryEntry ItemEntry in emails)
+                {
+                    message.BccRecipients.Add(ItemEntry.Key.ToString());
+                }
 
-			if (String.IsNullOrEmpty(EWSSettings.ProxyServer)){
-				if (AppSettings.AuthRequired & !AppSettings.ProxyConfigured){
-				    // Try default credentials (e.g. for ISA with NTLM integration)
-				    WebRequest.DefaultWebProxy.Credentials = CredentialCache.DefaultCredentials;
-					AppSettings.ProxyConfigured= true;
-				}
-			}else{
-				WebRequest.DefaultWebProxy = new WebProxy(EWSSettings.ProxyServer,true);
-				WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(EWSSettings.ProxyUser, EWSSettings.ProxyPassword, EWSSettings.ProxyDomain );					
-				AppSettings.ProxyConfigured= true;
-			}
-			return service;
-		}
+                logger.Trace("Start send");
+                if (EWSSettings.SaveOnSend)
+                {
+                    message.SendAndSaveCopy();
+                }
+                else
+                {
+                    message.Send();
+                }
+                logger.Trace("End send");
+                return true;
+            }
+            catch (Exception e)
+            {
+                logger.WarnException("Exception sending mail", e);
+                return false;
+            }
+        }
 
-		
-		/// <summary>
+        public bool DeleteMsg(long lngMessage)
+        {
+            service.DeleteItems(new[] { new ItemId(GetMsgData(lngMessage).Id) }, DeleteMode.HardDelete, null, null);
+            return true;
+        }
+        /// <summary>
+        /// Calculate MD5 Hash used as POP3 UID string
+        /// </summary>
+        /// <param name="input">EWS message id</param>
+        /// <returns></returns>
+        private static string CalculateMD5Hash(string input)
+        {
+            // step 1, calculate MD5 hash from input
+            MD5 md5 = System.Security.Cryptography.MD5.Create();
+            byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+            byte[] hash = md5.ComputeHash(inputBytes);
+
+            // step 2, convert byte array to hex string
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hash.Length; i++)
+            {
+                sb.Append(hash[i].ToString("X2"));
+            }
+            return sb.ToString();
+        }
+
+
+        internal message GetMsgData(long lngMessage)
+        {
+            return (message)POP3Listener.UidlCacheItems[messages[lngMessage - 1]];
+        }
+
+        public long TotalSize()
+        {
+            return lngSize;
+        }
+        public int TotalCount()
+        {
+            return intCount;
+        }
+
+        private ExchangeService Connection()
+        {
+            ExchangeService service = new ExchangeService(EWSSettings.ServerVersion);
+            service.Credentials = new NetworkCredential(User, Password, EWSSettings.Domain);
+            service.Url = new Uri(EWSSettings.Server);
+
+            if (String.IsNullOrEmpty(EWSSettings.ProxyServer))
+            {
+                if (AppSettings.AuthRequired & !AppSettings.ProxyConfigured)
+                {
+                    // Try default credentials (e.g. for ISA with NTLM integration)
+                    WebRequest.DefaultWebProxy.Credentials = CredentialCache.DefaultCredentials;
+                    AppSettings.ProxyConfigured = true;
+                }
+            }
+            else
+            {
+                WebRequest.DefaultWebProxy = new WebProxy(EWSSettings.ProxyServer, true);
+                WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(EWSSettings.ProxyUser, EWSSettings.ProxyPassword, EWSSettings.ProxyDomain);
+                AppSettings.ProxyConfigured = true;
+            }
+            return service;
+        }
+
+        /// <summary>
         /// Attempt to made a dummy operation to check if we have conectivity.
         /// </summary>
         public bool TestExchangeService()
         {
             try
             {
-				service =Connection();
-	        	logger.Trace("Testing conection");
-            	string DummyEntryId = "ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE";
+                service = Connection();
+                logger.Trace("Testing conection");
+                string DummyEntryId = "ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE";
                 service.ConvertIds(new AlternateId[] { new AlternateId(IdFormat.HexEntryId, DummyEntryId, "pop2owa@pop2owa.com") }, IdFormat.HexEntryId);
-	        	logger.Trace("End SMTP conection");
-				return true;
+                logger.Trace("End SMTP conection");
+                return true;
             }
             catch (ServiceRequestException e)
             {
-	        	logger.FatalException("SMTP conection error", e);
-            	return false;
+                logger.FatalException("SMTP conection error", e);
+                return false;
             }
         }
         ~EWSWrapper()
         {
         	logger.Trace("EWSWrapper destroyed");
-        }
-
-
-		
+        }		
 	}
 }
