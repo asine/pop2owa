@@ -35,7 +35,7 @@ namespace Pop2Owa
                 logger.Trace("Calling InitializeComponent");
                 InitializeComponent();
                 logger.Trace("Setting combos");
-                cboVersion.DataSource = System.Enum.GetValues(typeof(ExchangeVersion));
+                cboVersion.DataSource = Enum.GetValues(typeof(ExchangeVersion));
                 cboVersion.SelectedItem = ExchangeVersion.Exchange2007_SP1;
                 logger.Trace("Calling LoadConfig");
                 LoadConfig();
@@ -93,7 +93,7 @@ namespace Pop2Owa
             }
             catch (Exception ex)
             {
-                logger.WarnException("Error Loading Config", ex);
+                logger.Warn("Error Loading Config,"+ ex);
             }
         }
 

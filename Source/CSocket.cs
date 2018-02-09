@@ -43,7 +43,7 @@ namespace Pop2Owa
 
         private class CSocketPacket
         {
-            public System.Net.Sockets.Socket thisSocket;
+            public Socket thisSocket;
             public byte[] dataBuffer = new byte[65536];
         }
         public CSocket(IPAddress address, int port)
@@ -88,12 +88,12 @@ namespace Pop2Owa
         }
         public void SendCRLF(string data)
         {
-            byte[] byData = System.Text.Encoding.ASCII.GetBytes(string.Concat(data, Environment.NewLine));
+            byte[] byData = Encoding.ASCII.GetBytes(string.Concat(data, Environment.NewLine));
             m_socWorker.Send(byData);
         }
         public void Send(string data)
         {
-            byte[] byData = System.Text.Encoding.ASCII.GetBytes(data);
+            byte[] byData = Encoding.ASCII.GetBytes(data);
             m_socWorker.Send(byData);
         }
 
@@ -120,7 +120,7 @@ namespace Pop2Owa
 
         }
 
-        private void WaitForData(System.Net.Sockets.Socket soc)
+        private void WaitForData(Socket soc)
         {
             try
             {
@@ -150,7 +150,7 @@ namespace Pop2Owa
                 int iRx = 0;
                 iRx = theSockId.thisSocket.EndReceive(asyn);
                 char[] chars = new char[iRx + 1];
-                System.Text.Decoder d = System.Text.Encoding.UTF8.GetDecoder();
+                var d = Encoding.UTF8.GetDecoder();
                 d.GetChars(theSockId.dataBuffer, 0, iRx, chars, 0);
 
                 internalBuffer.Append(chars, 0, iRx);

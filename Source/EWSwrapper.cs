@@ -160,7 +160,7 @@ namespace Pop2Owa
             string strMsg;
             byte[] MimeString = Item.Bind(service, GetMsgData(lngMessage).Id, new PropertySet(BasePropertySet.IdOnly, new List<PropertyDefinitionBase>() { EmailMessageSchema.MimeContent })).MimeContent.Content;
 
-            strMsg = System.Text.ASCIIEncoding.ASCII.GetString(MimeString);
+            strMsg = Encoding.ASCII.GetString(MimeString);
             if (strMsg.IndexOf(EndMail) > 1)
             {
                 return System.Text.Encoding.ASCII.GetBytes(strMsg.Replace(EndMail, ReplacedEndMail));
@@ -181,7 +181,8 @@ namespace Pop2Owa
                 message.ItemClass = "IPM.Note";
 
                 //TODO: Check conversion between stringbuilder & byte[].
-                message.MimeContent.Content = System.Text.Encoding.ASCII.GetBytes(msg);
+                //message.MimeContent.Content = Encoding.ASCII.GetBytes(msg);
+                message.MimeContent.Content = Encoding.UTF8.GetBytes(msg);
 
                 foreach (DictionaryEntry ItemEntry in emails)
                 {
@@ -220,8 +221,8 @@ namespace Pop2Owa
         private static string CalculateMD5Hash(string input)
         {
             // step 1, calculate MD5 hash from input
-            MD5 md5 = System.Security.Cryptography.MD5.Create();
-            byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+            MD5 md5 = MD5.Create();
+            byte[] inputBytes = Encoding.ASCII.GetBytes(input);
             byte[] hash = md5.ComputeHash(inputBytes);
 
             // step 2, convert byte array to hex string

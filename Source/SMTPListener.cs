@@ -50,7 +50,7 @@ namespace Pop2Owa
                             lastChars = Maildata.ToString(Maildata.Length - 5, 5);
                         }
                     }
-                    if (lastChars == "\r\n.\r\n")
+                    if (lastChars == "\r\n.\r\n"||lastChars=="\0\0.\r\n")
                     {
                         logger.Debug("End Mail Recived ");
                         if (ObjEWS.SendMsg(Maildata.ToString(0, Maildata.Length - 5)))
@@ -194,7 +194,7 @@ namespace Pop2Owa
             }
             if (strDataToSend.Length > 0)
             {
-                byData = System.Text.Encoding.ASCII.GetBytes(strDataToSend + Environment.NewLine);
+                byData = Encoding.ASCII.GetBytes(strDataToSend + Environment.NewLine);
                 socket.Send(byData);
             }
         }
